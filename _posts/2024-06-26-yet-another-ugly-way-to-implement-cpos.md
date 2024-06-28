@@ -1,35 +1,36 @@
 ---
 title: Yet another ugly way to implement CPOs
 description: Just a silly speculation about whether the shown experimental way is viable.
-categories: [c++]
-tags: [c++, experiments]
+categories: [c++, experiments]
+tags: [c++, templates, traits]
 ---
 
 ### Links
 
-- [Source code on GitHub Gist](https://gist.github.com/kobtsev/47568600f274dcab5955f2527894a0ab)
-- [Some tests and playground on Compiler Explorer](https://godbolt.org/z/a8z5bc8d6)
+- [Source code](https://gist.github.com/kobtsev/47568600f274dcab5955f2527894a0ab) on GitHub Gist;
+- [Some tests and playground](https://godbolt.org/z/a8z5bc8d6) on Compiler Explorer.
  
 ### What do we have now?
 
  We have several popular approaches to statically implement customization points:
 
-- Free (hidden friend) functions found by ADL: swap, begin, end, etc;
-- [Niebloid-CPOs](https://en.cppreference.com/w/cpp/ranges/cpo) and [tag_invoke](https://wg21.link/p1895r0): std ranges, std execution;
-- Class template specialization: std hash, std formatter.
+- Free (hidden friend) functions found by ADL: `swap`, `begin`, `end`, etc;
+- [Niebloid-CPOs](https://en.cppreference.com/w/cpp/ranges/cpo) and [tag_invoke](https://wg21.link/p1895r0): `std::ranges`, `std::execution`;
+- [Niebloid](https://brevzin.github.io/c++/2020/12/19/cpo-niebloid/) approach based [CPOs](https://en.cppreference.com/w/cpp/ranges/cpo) and [tag_invoke](https://wg21.link/p1895r0): `std::ranges`, `std::execution`;
+- Class template specialization: `std::hash`, `std::formatter`, `std::is_error_code_enum`, etc.
         
 ### Do you believe in a bright future?
 
 The following proposals may help improve your mental health a little:
 
-- [P2279R0: We need a language mechanism for customization points](https://wg21.link/p2279r0)
-- [P2547R1: Language support for customisable functions](https://wg21.link/p2547r1)
+- [P2279R0](https://wg21.link/p2279r0): We need a language mechanism for customization points 
+- [P2547R1](https://wg21.link/p2547r1): Language support for customisable functions
 
 I can only wish that someday there will be language support for proper customization.
 
 ### Class template specialization way again
 
-Let's start from the very beginning. We have some class template, designed for customization. My naming skills leave a lot to be desired, so let's just call this template ***trait_impl***.
+Let's start from the very beginning. We have some class template that describes a specific [trait](https://doc.rust-lang.org/book/ch10-02-traits.html) and is intended to be customized. My naming skills leave a lot to be desired, so let's just call this template `trait_impl`.
 
 ```cpp
 namespace extra {
@@ -62,7 +63,7 @@ namespace extra {
 }
 ```
 
-How can we make a specialization for ***trait_impl***? Let's do something like this:
+How can we make a specialization for `trait_impl`? Let's do something like this:
 
 ```cpp
 namespace my_lib {
@@ -86,13 +87,13 @@ namespace extra {
 ```
 
 Class template specialization is a fairly flexible way of customization that allows us to do a lot. 
-Also allows us to create customizations not only for functional objects but also for complex interfaces like [std::formatter](https://en.cppreference.com/w/cpp/utility/format/formatter).
+Also allows us to create customizations not only for functional objects but also for complex interfaces like *[std::formatter](https://en.cppreference.com/w/cpp/utility/format/formatter)*.
 But... But what annoys me personally about this is the difficult implementation of specializations.
 Specialization must be in the library namespace, which in turn forces us to dance around that namespace: tearing apart client code.
 
 ### Silly tags again
 
-What if we improve the approach a little by applying the idea of ​​using tags from the ***tag_invoke*** approach?
+What if we improve the approach a little by applying the idea of ​​using tags from the `tag_invoke` approach?
 Let's upgrade the source code of the auxiliary library using tags:
 
 ```cpp
@@ -115,7 +116,7 @@ The result was several templates with the following parameters:
 - Tag: A tag that specifies which customization is used;
 - T: A target type for which the customization is intended;
 
-Now let's create a tag for a ***trait***. To complicate the task, let's move it into a separate namespace:
+Now let's create a tag for a trait. To complicate the task, let's move it into a separate namespace:
 
 ```cpp
 namespace domain {
@@ -252,7 +253,7 @@ namespace domain {
 ```
 
 I don't do this because I don't see the need for it. It seems to me that such tricks lead to boilerplate code growth. 
-Personally I'd rather live with the special specialization of ***trait_impl*** which is used to infer the target type from the first parameter of the **trait_impl<Tag, T>::operator()**: 
+Personally I'd rather live with the special specialization of `trait_impl` which is used to infer the target type from the first parameter of the `trait_impl<Tag, T>::operator()`: 
     
 ```cpp
 namespace extra {
@@ -476,7 +477,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
 
 ### Proper customization points
 
-I took the formal criteria for proper customization points from the article "[Why tag_invoke is not the solution I want](https://brevzin.github.io/c++/2020/12/01/tag-invoke/)". 
+I took the formal criteria for proper customization points from the article "[Barry Revzin: Why tag_invoke is not the solution I want](https://brevzin.github.io/c++/2020/12/01/tag-invoke/)". 
 
 1. The ability to see clearly, in code, what the interface is that can (or needs to) be customized.
 2. The ability to provide default implementations that can be overridden, not just non-defaulted functions.
@@ -486,6 +487,6 @@ I took the formal criteria for proper customization points from the article "[Wh
 6. The ability to easily verify that a type implements an interface.
 
 The method I suggested (as a slight improvement on class template specialization way) **probably doesn't meet these criteria either**. 
-Does the proposal [P2547R1: Language support for customisable functions](https://wg21.link/p2547r1) meet these criteria?
+Does the proposal [P2547R1](https://wg21.link/p2547r1) (Language support for customisable functions) meet these criteria?
 How do you see the future mechanism for creating customization points built into the language?
 Share what approaches you use to create customization points.                                        
