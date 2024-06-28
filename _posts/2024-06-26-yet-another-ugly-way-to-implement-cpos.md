@@ -15,7 +15,6 @@ tags: [c++, templates, traits]
  We have several popular approaches to statically implement customization points:
 
 - Free (hidden friend) functions found by ADL: `swap`, `begin`, `end`, etc;
-- [Niebloid-CPOs](https://en.cppreference.com/w/cpp/ranges/cpo) and [tag_invoke](https://wg21.link/p1895r0): `std::ranges`, `std::execution`;
 - [Niebloid](https://brevzin.github.io/c++/2020/12/19/cpo-niebloid/) approach based [CPOs](https://en.cppreference.com/w/cpp/ranges/cpo) and [tag_invoke](https://wg21.link/p1895r0): `std::ranges`, `std::execution`;
 - Class template specialization: `std::hash`, `std::formatter`, `std::is_error_code_enum`, etc.
         
