@@ -112,12 +112,12 @@ comments:
   # Giscus options › https://giscus.app
   giscus:
     repo: "kyookuhmbuh/kyookuhmbuh.github.io" # <gh-username>/<repo>
-    repo_id:
-    category:
-    category_id:
+    repo_id: "R_kgDOMPeRpQ"
+    category: "Show and tell"
+    category_id: "DIC_kwDOMPeRpc4CgdVS"
     mapping: # optional, default to 'pathname'
     strict: # optional, default to '0'
-    input_position: # optional, default to 'bottom'
+    input_position: "top" # optional, default to 'bottom'
     lang: # optional, default to the value of `site.lang`
     reactions_enabled: # optional, default to the value of `1`
 
