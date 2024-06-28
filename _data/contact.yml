@@ -5,7 +5,6 @@
 
 - type: telegram
   icon: "fa-brands fa-telegram"
-   url: 't.me/kyookuhmbuh_public' 
 
 - type: rss
   icon: "fas fa-rss"
