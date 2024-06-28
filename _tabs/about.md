@@ -2,9 +2,6 @@
 # the default layout is 'page'
 icon: fas fa-info-circle
 order: 4
-comments: true
-tail_includes:
-  - comments
 ---
 
 Just a silly blog about programming. 
