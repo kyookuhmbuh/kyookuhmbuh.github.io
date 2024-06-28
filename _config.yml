@@ -113,8 +113,8 @@ comments:
   giscus:
     repo: "kyookuhmbuh/kyookuhmbuh.github.io" # <gh-username>/<repo>
     repo_id: "R_kgDOMPeRpQ"
-    category: "Show and tell"
-    category_id: "DIC_kwDOMPeRpc4CgdVS"
+    category: "Comments"
+    category_id: "DIC_kwDOMPeRpc4CgdWi"
     mapping: # optional, default to 'pathname'
     strict: # optional, default to '0'
     input_position: "top" # optional, default to 'bottom'
