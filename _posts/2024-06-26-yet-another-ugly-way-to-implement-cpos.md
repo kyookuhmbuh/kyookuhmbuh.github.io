@@ -31,7 +31,7 @@ I can only wish that someday there will be language support for proper customiza
 
 Let's start from the very beginning. We have some class template that describes a specific [trait](https://doc.rust-lang.org/book/ch10-02-traits.html) and is intended to be customized. My naming skills leave a lot to be desired, so let's just call this template `trait_impl`.
 
-```cpp
+```c++
 namespace extra {
 
   template <typename Target>
