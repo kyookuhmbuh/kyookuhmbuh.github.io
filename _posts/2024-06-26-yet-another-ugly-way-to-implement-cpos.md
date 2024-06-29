@@ -142,7 +142,7 @@ namespace client {
   struct target {
     int value;
 
-    template <typename...>
+    template <typename>
     struct trait_impl; // inject name
   };
 
@@ -159,7 +159,7 @@ namespace client {
     int value;
 
     // inject name 
-    template <typename...> 
+    template <typename> 
     struct trait_impl; 
 
     // inline trait impl (T::trait_impl<Tag>)
@@ -308,9 +308,8 @@ namespace domain {
   
   struct get_value 
   {
-    
     // inject name 
-    template <typename...> 
+    template <typename> 
     struct trait_impl; 
 
     // default impl
