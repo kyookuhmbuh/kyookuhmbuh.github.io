@@ -8,7 +8,7 @@ tags: [c++, templates, traits]
 ### Links
 
 - [Source code](https://gist.github.com/kobtsev/47568600f274dcab5955f2527894a0ab) on GitHub Gist;
-- [Some tests and playground](https://godbolt.org/z/a8z5bc8d6) on Compiler Explorer.
+- [Some tests and playground](https://godbolt.org/z/oW8d9WKsP) on Compiler Explorer.
  
 ### What do we have now?
 
@@ -22,8 +22,8 @@ tags: [c++, templates, traits]
 
 The following proposals may help improve your mental health a little:
 
-- [P2279R0](https://wg21.link/p2279r0): We need a language mechanism for customization points 
-- [P2547R1](https://wg21.link/p2547r1): Language support for customisable functions
+- [P2279R0](https://wg21.link/p2279r0): We need a language mechanism for customization points;
+- [P2547R1](https://wg21.link/p2547r1): Language support for customisable functions.
 
 I can only wish that someday there will be language support for proper customization.
 
@@ -68,7 +68,7 @@ How can we make a specialization for `trait_impl`? Let's do something like this:
 namespace my_lib {
 
   struct nonsense {
-    int field;
+    int value;
   };
 
 } // namespace my_lib
@@ -78,7 +78,7 @@ namespace extra {
   template <>
   struct trait_impl<my_lib::nonsense> {
     constexpr auto operator()(my_lib::nonsense const& target) noexcept {
-      return target.field;
+      return target.value;
     }
   }; 
 
@@ -119,7 +119,7 @@ Now let's create a tag for a trait. To complicate the task, let's move it into a
 
 ```cpp
 namespace domain {
-  struct get_field; // trait tag
+  struct get_value; // trait tag
 } 
 ```
     
@@ -140,7 +140,7 @@ Let's "infect" the target class with a nested template class. Invade it like a v
 namespace client {
 
   struct target {
-    int field;
+    int value;
 
     template <typename...>
     struct trait_impl; // inject name
@@ -156,7 +156,7 @@ namespace client {
 
   struct target 
   {
-    int field;
+    int value;
 
     // inject name 
     template <typename...> 
@@ -167,13 +167,13 @@ namespace client {
     struct trait_impl<domain::some_trait_1> { /* ... */ }; 
   };
 
-  // impl get_field for target
+  // impl get_value for target
   template <>
-  struct target::trait_impl<domain::get_field>  
+  struct target::trait_impl<domain::get_value>  
   {
     constexpr auto operator()(target const& t) const noexcept 
     {
-      return t.field;
+      return t.value;
     }
   }; 
 
@@ -212,15 +212,15 @@ Maybe this will work:
 ```cpp
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
-  static_assert(extra::has_trait<client::target, domain::get_field>);
+  static_assert(extra::has_trait<client::target, domain::get_value>);
 
   struct ignorant{};
-  static_assert(not extra::has_trait<ignorant, domain::get_field>);
+  static_assert(not extra::has_trait<ignorant, domain::get_value>);
     
-  constexpr extra::has_trait<domain::get_field> auto instance = client::target{ 12 };
+  constexpr extra::has_trait<domain::get_value> auto instance = client::target{ 12 };
 
   // Yep, call requires a lot of code =( 
-  constexpr auto trait = extra::trait<domain::get_field, client::target>;
+  constexpr auto trait = extra::trait<domain::get_value, client::target>;
   constexpr auto value = trait(instance); 
     
   static_assert(12 == value);
@@ -234,19 +234,19 @@ You can turn a tag into an invocable: the tag will look and behave like a CPO.
 ```cpp
 namespace domain {
   
-  inline constexpr struct final get_field_t 
+  inline constexpr struct final get_value_t 
   {
 
     // boilerplate-code with forward args, noexcept, trailing return type
 
-    template <extra::has_trait<get_field_t> T>
+    template <extra::has_trait<get_value_t> T>
     constexpr auto operator()(T const& target) const 
-      noexcept(noexcept(extra::trait<get_field_t, T>(target))) 
+      noexcept(noexcept(extra::trait<get_value_t, T>(target))) 
     {
-      return extra::trait<get_field_t, T>(target);
+      return extra::trait<get_value_t, T>(target);
     } 
 
-  } get_field;
+  } get_value;
 
 } // namespace domain 
 ```
@@ -257,12 +257,17 @@ Personally I'd rather live with the special specialization of `trait_impl` which
 ```cpp
 namespace extra {
 
-  template <typename Tag, typename T = std::type_identity<void>>
+  template <typename Tag, typename T = void>
   struct trait_impl;
+
+  template <typename Tag, has_trait<Tag> T = void>
+  inline constexpr auto trait = trait_impl<Tag, T>{};
   
   template <typename Tag>
-  struct trait_impl<Tag, std::type_identity<void>>
+  struct trait_impl<Tag, void>
   {
+    using is_transparent = std::true_type;
+
     template <typename T,
               typename... U,
               typename Target = std::remove_cvref_t<T>>
@@ -276,9 +281,6 @@ namespace extra {
                                   std::forward<U>(args)...);
     }
   };
-  
-  template <typename Tag, has_trait<Tag> T = std::type_identity<void>>
-  inline constexpr auto trait = trait_impl<Tag, T>{};
 
 } // namespace extra
 
@@ -287,12 +289,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   using namespace client;
   using namespace domain;
 
-  static_assert(extra::has_trait<target, get_field>);
+  static_assert(extra::has_trait<target, get_value>);
   
-  constexpr extra::has_trait<get_field> auto instance = target{ 12 };
+  constexpr auto instance = target{ 12 };
 
   // now less code is required to call 
-  constexpr auto value = extra::trait<get_field>(instance);
+  constexpr auto value = extra::trait<get_value>(instance);
     
   static_assert(12 == value);
 }  
@@ -305,7 +307,7 @@ Let's try using tags for this:
 ```cpp
 namespace domain {
   
-  struct get_field 
+  struct get_value 
   {
     
     // inject name 
@@ -323,14 +325,14 @@ namespace domain {
     }; 
 
     // delegating impl
-    template <extra::has_trait<get_field> T>
+    template <extra::has_trait<get_value> T>
     struct trait_impl<std::optional<T>> 
     {
       constexpr auto operator()(std::optional<T> const& opt) const noexcept 
       {
         if (opt) 
         {
-          return extra::trait<T, get_field>(*opt);
+          return extra::trait<T, get_value>(*opt);
         }
 
         return 0;
@@ -349,9 +351,9 @@ namespace extra {
 
   // Tag::trait_impl<T>
   template <typename T, typename Tag>
-  concept has_trait_impl_from_tag_nested_type = requires {
-    { typename Tag::template trait_impl<T>{} };
-  };
+  concept has_trait_impl_from_tag_nested_type =
+    not std::is_void_v<T> // you cannot create a reference to 'void'
+    and requires { { typename Tag::template trait_impl<T>{} }; };
 
   template <typename Tag, typename T>
     requires has_trait_impl_from_tag_nested_type<T, Tag> and
