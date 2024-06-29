@@ -201,8 +201,7 @@ namespace extra {
 
   template <typename Tag, typename T>
     requires has_trait_impl_from_target_nested_type<T, Tag>
-  struct trait_impl<T, Tag> : T::template trait_impl<Tag>
-  {};
+  struct trait_impl<T, Tag> : T::template trait_impl<Tag> {};
 
 } // namespace extra
 ```
@@ -217,7 +216,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   struct ignorant{};
   static_assert(not extra::has_trait<ignorant, domain::get_value>);
     
-  constexpr extra::has_trait<domain::get_value> auto instance = client::target{ 12 };
+  constexpr client::target instance { 12 };
 
   // Yep, call requires a lot of code =( 
   constexpr auto trait = extra::trait<domain::get_value, client::target>;
@@ -332,7 +331,7 @@ namespace domain {
       {
         if (opt) 
         {
-          return extra::trait<T, get_value>(*opt);
+          return extra::trait<get_value, T>(*opt);
         }
 
         return 0;
@@ -358,8 +357,7 @@ namespace extra {
   template <typename Tag, typename T>
     requires has_trait_impl_from_tag_nested_type<T, Tag> and
              (not has_trait_impl_from_target_nested_type<T, Tag>)
-  struct trait_impl<Tag, T> : Tag::template trait_impl<T>
-  {};
+  struct trait_impl<Tag, T> : Tag::template trait_impl<T> {};
 
 } // namespace extra
 ```
@@ -418,8 +416,7 @@ namespace extra {
 
   template <typename Tag, typename T>
     requires has_trait_impl_from_adl<T, Tag>
-  struct trait_impl<Tag, T> : internal::trait_impl_from_adl::type<Tag, T>
-  {};
+  struct trait_impl<Tag, T> : internal::trait_impl_from_adl::type<Tag, T> {};
 
 } // namespace extra
 ```
