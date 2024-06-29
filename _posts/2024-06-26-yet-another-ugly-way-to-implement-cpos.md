@@ -42,7 +42,7 @@ namespace extra {
 
 We could also check for specialization by writing something like this:
 
-```cpp
+```c++
 namespace extra {  
 
   template <typename T>
@@ -53,7 +53,7 @@ namespace extra {
 
 In order not to generate new instances when using customization (simply because it's inconvenient), we will make an auxiliary template:
 
-```cpp
+```c++
 namespace extra {  
 
   template <typename T> requires has_trait<T>
@@ -64,7 +64,7 @@ namespace extra {
 
 How can we make a specialization for `trait_impl`? Let's do something like this:
 
-```cpp
+```c++
 namespace my_lib {
 
   struct nonsense {
@@ -95,7 +95,7 @@ Specialization must be in the library namespace, which in turn forces us to danc
 What if we improve the approach a little by applying the idea of ​​using tags from the `tag_invoke` approach?
 Let's upgrade the source code of the auxiliary library using tags:
 
-```cpp
+```c++
 namespace extra {
 
   template <typename Tag, typename T>
@@ -117,7 +117,7 @@ The result was several templates with the following parameters:
 
 Now let's create a tag for a trait. To complicate the task, let's move it into a separate namespace:
 
-```cpp
+```c++
 namespace domain {
   struct get_value; // trait tag
 } 
@@ -125,7 +125,7 @@ namespace domain {
     
 Let me remind you that we have a template designed for creating specializations:
 
-```cpp
+```c++
 namespace extra {
 
   template <typename Tag, typename T>
@@ -136,7 +136,7 @@ namespace extra {
 
 Let's "infect" the target class with a nested template class. Invade it like a virus and do unattractive things.
 
-```cpp
+```c++
 namespace client {
 
   struct target {
@@ -151,7 +151,7 @@ namespace client {
 
 Now we can implement new traits for the target class using tags:
 
-```cpp
+```c++
 namespace client {
 
   struct target 
@@ -187,7 +187,7 @@ namespace client {
 Now let's teach the auxiliary library to look for trait implementations. 
 Naming entities is quite a difficult job =)
 
-```cpp
+```c++
 namespace extra {
 
   // T::trait_impl<Tag>
@@ -208,7 +208,7 @@ namespace extra {
 
 Maybe this will work:
 
-```cpp
+```c++
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
   static_assert(extra::has_trait<client::target, domain::get_value>);
@@ -230,7 +230,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 You can turn a tag into an invocable: the tag will look and behave like a CPO.
 
-```cpp
+```c++
 namespace domain {
   
   inline constexpr struct final get_value_t 
@@ -253,7 +253,7 @@ namespace domain {
 I don't do this because I don't see the need for it. It seems to me that such tricks lead to boilerplate code growth. 
 Personally I'd rather live with the special specialization of `trait_impl` which is used to infer the target type from the first parameter of the `trait_impl<Tag, T>::operator()`: 
     
-```cpp
+```c++
 namespace extra {
 
   template <typename Tag, typename T = void>
@@ -303,7 +303,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 It is more important when declaring a trait, if we are its owner, to provide a default implementation.
 Let's try using tags for this:
 
-```cpp
+```c++
 namespace domain {
   
   struct get_value 
@@ -345,7 +345,7 @@ namespace domain {
 
 This time we will teach the auxiliary library to extract specializations for a trait from a tag:
 
-```cpp
+```c++
 namespace extra {
 
   // Tag::trait_impl<T>
@@ -374,7 +374,7 @@ Seems better than nothing. If we only have third party types and do not own the 
 We also cannot put nested types inside enums. 
 We can do some naughtiness with ADL to support enums in our schema.
 
-```cpp
+```c++
 namespace extra {
   
   namespace internal::trait_impl_from_adl
@@ -423,7 +423,7 @@ namespace extra {
 
  Let's try to use them:
     
-```cpp
+```c++
 // some third party traits
 namespace domain { 
   struct to_string; 
