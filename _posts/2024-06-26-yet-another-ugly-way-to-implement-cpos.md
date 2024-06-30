@@ -8,7 +8,7 @@ tags: [c++, templates, traits]
 ### Links
 
 - [Source code](https://gist.github.com/kobtsev/47568600f274dcab5955f2527894a0ab) on GitHub Gist;
-- [Some tests and playground](https://godbolt.org/z/oW8d9WKsP) on Compiler Explorer.
+- [Some tests and playground](https://godbolt.org/z/635fdv63d) on Compiler Explorer.
  
 ### What do we have now?
 
@@ -32,56 +32,54 @@ I can only wish that someday there will be language support for proper customiza
 Let's start from the very beginning. We have some class template that describes a specific [trait](https://doc.rust-lang.org/book/ch10-02-traits.html) and is intended to be customized. My naming skills leave a lot to be desired, so let's just call this template `trait_impl`.
 
 ```c++
-namespace extra {
-
+namespace extra
+{
   template <typename Target>
   struct trait_impl;
-
 }
 ```
 
 We could also check for specialization by writing something like this:
 
 ```c++
-namespace extra {  
-
+namespace extra
+{  
   template <typename T>
   concept has_trait = requires { trait_impl<T>{}; };
-
 }
 ```
 
-In order not to generate new instances when using customization (simply because it's inconvenient), we will make an auxiliary template:
+In order not to generate new instances when using customization (simply because it's inconvenient), we will make an helper template:
 
 ```c++
-namespace extra {  
-
+namespace extra
+{  
   template <typename T> requires has_trait<T>
   inline constexpr auto trait = trait_impl<T>{};
-
 }
 ```
 
 How can we make a specialization for `trait_impl`? Let's do something like this:
 
 ```c++
-namespace my_lib {
-
-  struct nonsense {
+namespace my_lib
+{
+  struct nonsense
+  {
     int value;
   };
-
 } // namespace my_lib
 
-namespace extra {
-
+namespace extra
+{
   template <>
-  struct trait_impl<my_lib::nonsense> {
-    constexpr auto operator()(my_lib::nonsense const& target) noexcept {
+  struct trait_impl<my_lib::nonsense>
+  {
+    constexpr auto operator()(my_lib::nonsense const& target) noexcept
+    {
       return target.value;
     }
   }; 
-
 } // namespace extra
 ```
 
@@ -93,11 +91,11 @@ Specialization must be in the library namespace, which in turn forces us to danc
 ### Silly tags again
 
 What if we improve the approach a little by applying the idea of ​​using tags from the `tag_invoke` approach?
-Let's upgrade the source code of the auxiliary library using tags:
+Let's upgrade the source code of the helper library using tags:
 
 ```c++
-namespace extra {
-
+namespace extra
+{
   template <typename Tag, typename T>
   struct trait_impl;
 
@@ -106,7 +104,6 @@ namespace extra {
 
   template <typename Tag, has_trait<Tag> T>
   inline constexpr auto trait = trait_impl<Tag, T>{};
-
 }
 ```
 
@@ -118,7 +115,8 @@ The result was several templates with the following parameters:
 Now let's create a tag for a trait. To complicate the task, let's move it into a separate namespace:
 
 ```c++
-namespace domain {
+namespace domain
+{
   struct get_value; // trait tag
 } 
 ```
@@ -126,40 +124,39 @@ namespace domain {
 Let me remind you that we have a template designed for creating specializations:
 
 ```c++
-namespace extra {
-
+namespace extra
+{
   template <typename Tag, typename T>
   struct trait_impl;
-
 } 
 ```
 
 Let's "infect" the target class with a nested template class. Invade it like a virus and do unattractive things.
 
 ```c++
-namespace client {
-
-  struct target {
+namespace client
+{
+  struct target
+  {
     int value;
 
-    template <typename>
+    template <typename...>
     struct trait_impl; // inject name
   };
-
-} 
+} // namespace client
 ```
 
 Now we can implement new traits for the target class using tags:
 
 ```c++
-namespace client {
-
+namespace client
+{
   struct target 
   {
     int value;
 
     // inject name 
-    template <typename> 
+    template <typename...> 
     struct trait_impl; 
 
     // inline trait impl (T::trait_impl<Tag>)
@@ -184,17 +181,19 @@ namespace client {
 } // namespace client 
 ```
 
-Now let's teach the auxiliary library to look for trait implementations. 
+Now let's teach the helper library to look for trait implementations. 
 Naming entities is quite a difficult job =)
 
 ```c++
-namespace extra {
-
+namespace extra
+{
   // T::trait_impl<Tag>
   template <typename T, typename Tag>
-  concept has_trait_impl_from_target_nested_type = requires {
-    { typename T::template trait_impl<Tag>{} };
-  };
+  concept has_trait_impl_from_target_nested_type =
+    requires
+    {
+      { typename T::template trait_impl<Tag>{} };
+    };
 
   template <typename Tag, typename T>
   struct trait_impl;
@@ -231,20 +230,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 You can turn a tag into an invocable: the tag will look and behave like a CPO.
 
 ```c++
-namespace domain {
-  
+namespace domain
+{  
   inline constexpr struct final get_value_t 
   {
-
     // boilerplate-code with forward args, noexcept, trailing return type
-
     template <extra::has_trait<get_value_t> T>
     constexpr auto operator()(T const& target) const 
       noexcept(noexcept(extra::trait<get_value_t, T>(target))) 
     {
       return extra::trait<get_value_t, T>(target);
     } 
-
   } get_value;
 
 } // namespace domain 
@@ -304,12 +300,12 @@ It is more important when declaring a trait, if we are its owner, to provide a d
 Let's try using tags for this:
 
 ```c++
-namespace domain {
-  
+namespace domain
+{  
   struct get_value 
   {
     // inject name 
-    template <typename> 
+    template <typename...> 
     struct trait_impl; 
 
     // default impl
@@ -342,11 +338,11 @@ namespace domain {
 } // namespace domain 
 ```
 
-This time we will teach the auxiliary library to extract specializations for a trait from a tag:
+This time we will teach the helper library to extract specializations for a trait from a tag:
 
 ```c++
-namespace extra {
-
+namespace extra
+{
   // Tag::trait_impl<T>
   template <typename T, typename Tag>
   concept has_trait_impl_from_tag_nested_type =
@@ -368,14 +364,21 @@ Note that we have made target type specialization preferable to tag specializati
 Imagine that we are not the owner of the tag for the trait. 
 This means we cannot provide a default implementation using a tag, as we already did. 
 But we can still assume a specialization for a trait within its own namespace. 
-Seems better than nothing. If we only have third party types and do not own the trait, most likely there is something wrong in the code architecture.
+Seems better than nothing. But if we only have third party types and do not own the trait, most likely there is something wrong in the code architecture.
 
 We also cannot put nested types inside enums. 
-We can do some naughtiness with ADL to support enums in our schema.
+However, we can do some naughtiness with ADL to support enums in our schema.
 
 ```c++
-namespace extra {
-  
+auto trait_impl(std::type_identity<target_type>)
+  -> std::type_identity<target_type_extension>;
+```
+
+A helper library can redirect the search for trait specializations to an additional structure.
+
+```c++
+namespace extra
+{
   namespace internal::trait_impl_from_adl
   {
     template <typename... U>
@@ -387,14 +390,7 @@ namespace extra {
       return trait_impl(args...);
     }
 
-    template <typename T, typename Tag>
-    concept type_check = requires {
-      {
-        trait_impl(std::type_identity<Tag>{}, std::type_identity<T>{})
-      } -> std::default_initializable;
-    };
-
-    struct type_getter
+    struct type_identity_getter
     {
       template <typename... U>
       constexpr auto operator()(U... args) noexcept
@@ -403,10 +399,31 @@ namespace extra {
       }
     };
 
+    template <typename T>
+    using trait_impl_bridge =
+      std::invoke_result_t<type_identity_getter, std::type_identity<T>>::type;
+
     template <typename Tag, typename T>
-    using type = std::invoke_result_t<type_getter,
-                                      std::type_identity<Tag>,
-                                      std::type_identity<T>>;
+    using type = trait_impl_bridge<T>::template trait_impl<Tag>;
+
+    template <typename T, template <typename...> typename Template>
+    inline constexpr bool is_specialization_v = false;
+
+    template <template <typename...> typename T, typename... U>
+    inline constexpr bool is_specialization_v<T<U...>, T> = true;
+
+    template <typename T>
+    concept specialization_of_type_identity =
+      is_specialization_v<T, std::type_identity>;
+
+    template <typename T, typename Tag>
+    concept type_check = 
+      requires 
+      {
+        { trait_impl(std::type_identity<T>{}) } -> specialization_of_type_identity;
+        { type<Tag, T>{} };
+      };
+
   } // namespace internal::trait_impl_from_adl
 
   template <typename T, typename Tag>
@@ -424,51 +441,74 @@ namespace extra {
     
 ```c++
 // some third party traits
-namespace domain { 
+namespace domain
+{ 
   struct to_string; 
   struct validate; 
-}
+} // namespace domain
 
-enum class my_kind { first, second };
-
-struct my_kind_to_string {
-  constexpr char const* operator()(my_kind e) const noexcept {
-    switch (e) {
-      case my_kind::first: return "first";
-      case my_kind::second: return "second";
-      default: std::unreachable();
-    }
-  }
-};
-
-// use ADL as deduction guide 
-auto trait_impl(
-    std::type_identity<domain::to_string>, 
-    std::type_identity<my_kind>) 
-  -> my_kind_to_string;
-
-// or make trait type getter
-inline constexpr auto trait_impl(
-    std::type_identity<domain::validate>,
-    std::type_identity<my_kind>) noexcept 
+namespace client
 {
-  return [](my_kind e) {
-    switch (e) {
-      case my_kind::first: 
-      case my_kind::second: 
-        return true;
-      default: 
-        return false;
-    }
+  enum class target_enum
+  {
+    first,
+    second
   };
-}
 
-int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv) {
-  constexpr my_kind e = my_kind::first;
+  struct target_enum_ext
+  {
+    template <typename...>
+    struct trait_impl;
+
+    template <>
+    struct trait_impl<domain::to_string>
+    {
+      constexpr char const* operator()(target_enum e) const noexcept
+      {
+        switch (e)
+        {
+          case target_enum::first:
+            return "first";
+          case target_enum::second:
+            return "second";
+          default:
+            return ""; // std::unreachable();
+        }
+      }
+    };
+
+    template <>
+    struct trait_impl<domain::validate>
+    {
+      constexpr bool operator()(target_enum e) const noexcept
+      {
+        switch (e)
+        {
+          case target_enum::first:
+          case target_enum::second:
+            return true;
+          default:
+            return false;
+        }
+      }
+    };
+  };
+
+  // deduction guide for trait_impl 
+  // (redirect target_enum::trait_impl<Tag> to target_enum_ext::trait_impl<Tag>)
+  auto trait_impl(std::type_identity<target_enum>)
+    -> std::type_identity<target_enum_ext>;
+
+} // namespace client
+
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
+{
+  constexpr auto e = client::target_enum::first;
   static_assert(extra::trait<domain::validate>(e));
 
-  auto kind_str = extra::trait<domain::to_string>(e);
-  // ...
+  constexpr auto str = extra::trait<domain::to_string>(e);
+  using namespace std::string_view_literals;
+  static_assert("first"sv == str);
 }  
 ```
 
