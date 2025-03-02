@@ -11,4 +11,4 @@ You can find me at GitHub:
 [kyookuhmbuh](https://github.com/kyookuhmbuh)
 
 My Telegram channel:
-[kyookuhmbuh_public](https://t.me/kyookuhmbuh_public)
+[kyookuhmbuh_feed](https://t.me/kyookuhmbuh_feed)
